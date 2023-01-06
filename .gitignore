@@ -1,0 +1,17 @@
+
+#ignore these:
+
+.terraform.lock.hcl
+.terraform
+**/.terraform/*
+**.terraform.lock.hcl*
+# .tfstate files
+*.tfstate
+*.tfstate.*
+.DS_Store
+.DS_Store
+**terraform.tfstate.d/*
+**.terraform.lock.hcl
+**.tfstate.*
+**.DS_Store**
+*.terraform*
