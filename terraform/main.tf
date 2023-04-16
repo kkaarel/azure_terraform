@@ -39,12 +39,27 @@ resource "azurerm_key_vault" "infra" {
   sku_name            = "standard"
 }
 
+#Allow function app to get and list secrets for connection strings
+resource "azurerm_key_vault_access_policy" "function_app_linux" {
+key_vault_id = azurerm_key_vault.infra.id
+
+tenant_id = var.ARM_TENANT_ID
+object_id = azurerm_linux_function_app.solution_test.identity.0.principal_id
+
+secret_permissions = [
+  "Get",
+  "List"
+]
+}
+
+
+
 resource "azurerm_service_plan" "infra" {
   name = "ASP-linux-${var.project}-${terraform.workspace}"
   resource_group_name = data.azurerm_resource_group.main.name
   location = data.azurerm_resource_group.main.location
   os_type = "Linux"
-  sku_name = "F1"
+  sku_name = "B1"
 
     lifecycle {
     create_before_destroy = true
@@ -74,6 +89,7 @@ resource "azurerm_linux_function_app" "solution_test" {
 
   site_config {
 
+
     application_stack {
       python_version = "3.9"
     }    
@@ -89,4 +105,22 @@ resource "azurerm_linux_function_app" "solution_test" {
   }
 }
 
+
+locals {
+    publish_code_command_linux = "az webapp deployment source config-zip --resource-group ${data.azurerm_resource_group.main.name} --name ${azurerm_linux_function_app.solution_test.name} --src ${var.archive_file}"
+   
+    }
+
+
+
+resource "null_resource" "function_app_linux" {
+  provisioner "local-exec" {
+    command = local.publish_code_command_linux
+  }
+  depends_on = [local.publish_code_command_linux]
+  triggers = {
+    input_json = filemd5(var.archive_file)
+    publish_code_command = local.publish_code_command_linux
+  }
+}
   
